@@ -650,6 +650,24 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_REAL_KEY }}-${{ runner.os }}-${{ github.ref_name }}
          
+      - name: 编译 monitor_wmi 模块
+        run: |
+          WORKDIR="$(pwd)"
+          export PATH="$WORKDIR/kernel_workspace/clang18/bin:$PATH"
+          export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
+          mkdir -p monitor_out
+          cp $GITHUB_WORKSPACE/monitor_module/monitor_wmi.c monitor_out/
+          cp $GITHUB_WORKSPACE/monitor_module/Makefile monitor_out/
+          make -C kernel_workspace/common \
+            O=$(pwd)/kernel_workspace/common/out \
+            LLVM=1 ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CC=clang \
+            M=$(pwd)/monitor_out \
+            modules
+          echo "monitor_wmi.ko собран:"
+          ls -la monitor_out/monitor_wmi.ko
+         
       - name: 应用KPM并修补内核
         run: |
           if [[ ${{ github.event.inputs.kpm_enable }} == 'builtin' && ( "${{ github.event.inputs.ksu_type }}" == "sukisu" || "${{ github.event.inputs.ksu_type }}" == "resukisu" ) ]]; then
@@ -684,6 +702,10 @@ jobs:
             echo "未找到内核镜像文件，构建可能出错"
             exit 1
           fi
+          [ -f ${{ github.workspace }}/monitor_out/monitor_wmi.ko ] && \
+            cp ${{ github.workspace }}/monitor_out/monitor_wmi.ko ./monitor_wmi.ko && \
+            echo "monitor_wmi.ko добавлен в zip" || \
+            echo "monitor_wmi.ko не найден, пропускаю"
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
           elif [[ ${{ github.event.inputs.ksu_type }} == "resukisu" ]]; then
