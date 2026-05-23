@@ -660,12 +660,12 @@ jobs:
             -O monitor_out/monitor_wmi.c
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/monitor_module/Makefile \
             -O monitor_out/Makefile
-          make -C kernel_workspace/common \
-            O=$(pwd)/kernel_workspace/common/out \
+          make -C $(pwd)/kernel_workspace/common/out \
             LLVM=1 ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-gnu- \
             CC=clang \
             M=$(pwd)/monitor_out \
+            KBUILD_MODPOST_WARN=1 \
             modules
           echo "monitor_wmi.ko собран:"
           ls -la monitor_out/monitor_wmi.ko
